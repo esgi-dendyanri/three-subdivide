@@ -500,7 +500,7 @@ export class LoopSubdivision {
                 _vec0to1.copy(_vector0).add(_vector1).divideScalar(2.0);
                 _vec1to2.copy(_vector1).add(_vector2).divideScalar(2.0);
                 _vec2to0.copy(_vector2).add(_vector0).divideScalar(2.0);
-    
+
                 // Add New Triangle Positions
                 setTriangle(array, index, step, _vector0, _vec0to1, _vec2to0); index += (step * 3);
                 setTriangle(array, index, step, _vector1, _vec1to2, _vec0to1); index += (step * 3);

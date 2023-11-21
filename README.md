@@ -29,17 +29,12 @@ This modifier uses the [Loop](https://en.wikipedia.org/wiki/Loop_subdivision_sur
 import { LoopSubdivision } from 'LoopSubdivision.js';
 ```
 
-- Option 2: Install from [npm](https://www.npmjs.com/package/three-subdivide), import from 'three-subdivide'...
+- Option 2: Install from [npm](https://github.com/esgi-dendyanri/three-subdivide), import from 'three-subdivide'...
 ```
-npm install three-subdivide
+npm install -s esgi-dendyanri/three-subdivide
 ```
 ```javascript
 import { LoopSubdivision } from 'three-subdivide';
-```
-
-- Option 3: Import directly from CDN...
-```javascript
-import { LoopSubdivision } from 'https://unpkg.com/three-subdivide/build/index.module.js';
 ```
 
 ## Usage

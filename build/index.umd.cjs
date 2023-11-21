@@ -106,6 +106,8 @@
             if (params.weight === undefined) params.weight = 1;
             if (isNaN(params.weight) || !isFinite(params.weight)) params.weight = 1;
             params.weight = Math.max(0, (Math.min(1, params.weight)));
+            // default params.minAreaSize = undefined
+            // default params.minLineSize = undefined
 
             ///// Geometries
             if (! verifyGeometry(bufferGeometry)) return bufferGeometry;
@@ -399,6 +401,7 @@
 
         /** Applies one iteration of Loop (flat) subdivision (1 triangle split into 4 triangles) */
         static flat(geometry, params = {}) {
+            let triIndicesToSkip = [];
 
             ///// Geometries
             if (! verifyGeometry(geometry)) return geometry;
@@ -409,12 +412,16 @@
             const attributeList = gatherAttributes(existing);
             const vertexCount = existing.attributes.position.count;
 
+            if ( params.minAreaSize || params.minLineSize ) {
+                triIndicesToSkip = getTriangleIndicesToSkipSpliting(existing.getAttribute('position'), params);
+            }
+
             ///// Build Geometry
             attributeList.forEach((attributeName) => {
                 const attribute = existing.getAttribute(attributeName);
                 if (! attribute) return;
 
-                loop.setAttribute(attributeName, LoopSubdivision.flatAttribute(attribute, vertexCount, params));
+                loop.setAttribute(attributeName, LoopSubdivision.flatAttribute(attribute, vertexCount, params, triIndicesToSkip));
             });
 
             ///// Morph Attributes
@@ -437,10 +444,8 @@
             return loop;
         }
 
-        static flatAttribute(attribute, vertexCount, params = {}) {
-            const newTriangles = 4;
-            const arrayLength = (vertexCount * attribute.itemSize) * newTriangles;
-            const floatArray = new attribute.array.constructor(arrayLength);
+        static flatAttribute(attribute, vertexCount, params = {}, triIndicesToSkip = []) {
+            const array = [];
 
             let index = 0;
             let step = attribute.itemSize;
@@ -451,19 +456,23 @@
                 _vector1.fromBufferAttribute(attribute, i + 1);
                 _vector2.fromBufferAttribute(attribute, i + 2);
 
-                // Midpoints
-                _vec0to1.copy(_vector0).add(_vector1).divideScalar(2.0);
-                _vec1to2.copy(_vector1).add(_vector2).divideScalar(2.0);
-                _vec2to0.copy(_vector2).add(_vector0).divideScalar(2.0);
+                if ( triIndicesToSkip.indexOf(i/3) !== -1 ) {
+                    setTriangle(array, index, step, _vector0, _vector1, _vector2); index += (step * 3);
+                } else {
+                    // Midpoints
+                    _vec0to1.copy(_vector0).add(_vector1).divideScalar(2.0);
+                    _vec1to2.copy(_vector1).add(_vector2).divideScalar(2.0);
+                    _vec2to0.copy(_vector2).add(_vector0).divideScalar(2.0);
 
-                // Add New Triangle Positions
-                setTriangle(floatArray, index, step, _vector0, _vec0to1, _vec2to0); index += (step * 3);
-                setTriangle(floatArray, index, step, _vector1, _vec1to2, _vec0to1); index += (step * 3);
-                setTriangle(floatArray, index, step, _vector2, _vec2to0, _vec1to2); index += (step * 3);
-                setTriangle(floatArray, index, step, _vec0to1, _vec1to2, _vec2to0); index += (step * 3);
+                    // Add New Triangle Positions
+                    setTriangle(array, index, step, _vector0, _vec0to1, _vec2to0); index += (step * 3);
+                    setTriangle(array, index, step, _vector1, _vec1to2, _vec0to1); index += (step * 3);
+                    setTriangle(array, index, step, _vector2, _vec2to0, _vec1to2); index += (step * 3);
+                    setTriangle(array, index, step, _vec0to1, _vec1to2, _vec2to0); index += (step * 3);
+                }
             }
 
-            return new THREE__namespace.BufferAttribute(floatArray, attribute.itemSize);
+            return new THREE__namespace.BufferAttribute(new attribute.array.constructor(array), attribute.itemSize);
         }
 
         /////////////////////////////////////////////////////////////////////////////////////
@@ -800,6 +809,35 @@
             geometry.computeVertexNormals();
         }
         return true;
+    }
+
+    function getTriangleIndicesToSkipSpliting(positionAttr, params = {}) {
+        const vertexCount = positionAttr.count;
+        const triIndices = [];
+        const triangle = new THREE__namespace.Triangle();
+
+        for ( let i = 0; i < vertexCount; i += 3 ) {
+            _vector0.fromBufferAttribute(positionAttr, i + 0);
+            _vector1.fromBufferAttribute(positionAttr, i + 1);
+            _vector2.fromBufferAttribute(positionAttr, i + 2);
+
+            triangle.set(_vector0, _vector1, _vector2);
+
+            if ( params.minAreaSize && triangle.getArea() < params.minAreaSize ) {
+                triIndices.push(i/3);
+            } else if ( params.minLineSize ) {
+                const maxLineSize = Math.max(...[
+                    _vector0.distanceTo(_vector1),
+                    _vector1.distanceTo(_vector2),
+                    _vector2.distanceTo(_vector0)
+                ]);
+                if ( maxLineSize < params.minLineSize ) {
+                    triIndices.push(i/3);
+                }
+            }
+        }
+
+        return triIndices
     }
 
     exports.LoopSubdivision = LoopSubdivision;
