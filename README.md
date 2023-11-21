@@ -58,6 +58,8 @@ const params = {
     preserveEdges:  false,      // optional, default: false
     flatOnly:       false,      // optional, default: false
     maxTriangles:   Infinity,   // optional, default: Infinity
+    minAreaSize:    undefined,  // optional, default: undefined
+    minLineSize:    undefined,  // optional, default: undefined
 };
 
 const geometry = LoopSubdivision.modify(new THREE.BoxGeometry(), iterations, params);
@@ -82,7 +84,9 @@ Parameters Object ('params')
 - [split]() : Boolean (optional) - split coplanar faces at their shared edges before subdividing?
 - [uvSmooth]() : Boolean (optional) - smooth UV coordinates during subdivision?
 - [preserveEdges]() Boolean (optional) - should edges / breaks in geometry be ignored during subdivision?
-- [flatOnly]() : Boolean (optioanl) - subdivide triangles but do not apply smoothing?
+- [flatOnly]() : Boolean (optional) - subdivide triangles but do not apply smoothing?
 - [maxTriangles]() : Number (optional) - limits subdivision to meshes with less than this number of triangles
+- [minAreaSize]() : Number (optional) - skip triangle split if area size is less than minAreaSize, only support flatOnly: true with split: false
+- [maxTriangles]() : Number (optional) - skip triangle split if longest distance between triangle point is less than minLineSize, only support flatOnly: true with split: false
 
 > NOTE: This modifier converts geometry to non-indexed before the subdivision algorithm is applied. If desired, you can use [BufferGeometryUtils.mergeVertices](https://threejs.org/docs/?q=buffer#examples/en/utils/BufferGeometryUtils.mergeVertices) to re-index geometry.
